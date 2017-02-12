@@ -6,8 +6,9 @@ This file creates your application.
 """
 
 from app import app
-from flask import render_template, request, redirect, url_for
-
+from flask import render_template, request, redirect, url_for, flash
+from .forms import contactform
+import smtplib
 
 ###
 # Routing for your application.
@@ -23,6 +24,29 @@ def home():
 def about():
     """Render the website's about page."""
     return render_template('about.html', name="Mary Jane")
+    
+@app.route('/contact/', methods=['GET','POST'])
+def contact():
+    """Render the website's contact page."""
+   
+    form = contactform()
+    
+    if request.method == 'POST':
+        # Validate form entries
+        if form.validate_on_submit():
+           
+            from_name = request.form['name']
+            from_email = request.form['email']
+            subject = request.form['subject']
+            msg = request.form['message']
+            # Send email message
+            send_email(from_name,from_email,subject,msg)
+            
+            flash('Your message has been sent.')
+            
+            return redirect(url_for('home'))
+            
+    return render_template('contact.html', form=form)
 
 
 ###
@@ -51,6 +75,26 @@ def add_header(response):
 def page_not_found(error):
     """Custom 404 page."""
     return render_template('404.html'), 404
+    
+def send_email(from_name, from_addr, subject, msg):
+    
+    to_name = 'Camay'
+    to_addr = 'thingythingthing@gmail.com'
+    message = """From: {} <{}>\nTo: {} <{}>\nSubject: {}\n\n{}"""
+    # Format message to be sent
+    message_to_send = message.format(from_name, from_addr, to_name,
+                                     to_addr, subject, msg)
+    
+    # Credentials (if needed)
+    username = 'thisconfusing@gmail.com'
+    password = 'password'
+    
+    # The actual mail send
+    server = smtplib.SMTP('smtp.gmail.com:587')
+    server.starttls()
+    server.login(username, password)
+    server.sendmail(from_addr, to_addr, message_to_send)
+    server.quit()
 
 
 if __name__ == '__main__':
